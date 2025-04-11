@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoHub Flash Software</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    .hidden { display: none; }
+    .section {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 15px #00ffcc33;
+    }
+    input, select, button {
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+      background: #292929;
+      color: #fff;
+    }
+    button {
+      background: #00ffcc;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .balance {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    .progress-bar {
+      background: #333;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress {
+      background: #00ffcc;
+      height: 20px;
+      width: 0%;
+      text-align: center;
+      color: #000;
+      font-weight: bold;
+    }
+    .eye-btn {
+      float: right;
+      cursor: pointer;
+    }
+    .tx-log {
+      background: #222;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="licenseSection" class="section">
+    <h2>Enter License Key</h2>
+    <input type="password" id="licenseKey" placeholder="Enter license key">
+    <button onclick="checkLicense()">Unlock</button>
+  </div>
+
+  <div id="mainApp" class="hidden">
+    <div class="section">
+      <h2>Deposit USDT</h2>
+      <select id="depositMethod">
+        <option value="bank">Bank</option>
+        <option value="crypto">Crypto</option>
+        <option value="paypal">PayPal</option>
+        <option value="skrill">Skrill</option>
+        <option value="payoneer">Payoneer</option>
+      </select>
+      <input type="number" id="depositAmount" placeholder="Enter deposit amount">
+      <button onclick="depositUSDT()">Deposit</button>
+    </div>
+
+    <div class="section">
+      <h2>Balances <span class="eye-btn" onclick="toggleBalances()">👁️</span></h2>
+      <div class="balance">USDT: <span id="usdtBalance">34,723.43</span> USDT</div>
+      <div class="balance">FlashUSDT: <span id="flashBalance">0</span> Flash</div>
+    </div>
+
+    <div class="section">
+      <h2>Generate FlashUSDT</h2>
+      <input type="number" id="generateAmount" placeholder="Enter USDT to generate flashes">
+      <button onclick="generateFlash()">Generate</button>
+      <div class="progress-bar">
+        <div class="progress" id="progressBar">0%</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Send FlashUSDT</h2>
+      <input type="text" id="walletAddress" placeholder="Enter receiver's wallet">
+      <select id="network">
+        <option value="TRC20">TRC20</option>
+        <option value="ERC20">ERC20</option>
+        <option value="BEP20">BEP20</option>
+      </select>
+      <input type="number" id="sendAmount" placeholder="Enter amount to send">
+      <button onclick="sendFlash()">Send</button>
+    </div>
+
+    <div class="section">
+      <h2>Transaction History</h2>
+      <div id="txHistory"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let usdt = 34723.43;
+  let flash = 0;
+  let visible = true;
+
+  function checkLicense() {
+    const key = document.getElementById('licenseKey').value;
+    if (key === 'free123free') {
+      document.getElementById('licenseSection').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+    } else {
+      alert('Invalid license key!');
+    }
+  }
+
+  function toggleBalances() {
+    visible = !visible;
+    document.getElementById('usdtBalance').innerText = visible ? usdt.toFixed(2) : '****';
+    document.getElementById('flashBalance').innerText = visible ? flash.toFixed(0) : '****';
+  }
+
+  function depositUSDT() {
+    let amount = parseFloat(document.getElementById('depositAmount').value);
+    if (!isNaN(amount) && amount > 0) {
+      usdt += amount;
+      document.getElementById('usdtBalance').innerText = usdt.toFixed(2);
+      alert('Deposited ' + amount + ' USDT');
+    }
+  }
+
+  function generateFlash() {
+    let amount = parseFloat(document.getElementById('generateAmount').value);
+    if (!isNaN(amount) && amount > 0 && amount <= usdt) {
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('progressBar').innerText = '0%';
+
+      let percent = 0;
+      const interval = setInterval(() => {
+        percent++;
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('progressBar').innerText = percent + '%';
+        if (percent >= 100) {
+          clearInterval(interval);
+          usdt -= amount;
+          flash += (amount * 100);
+          document.getElementById('usdtBalance').innerText = visible ? usdt.toFixed(2) : '****';
+          document.getElementById('flashBalance').innerText = visible ? flash.toFixed(0) : '****';
+          alert('Generated ' + (amount * 100) + ' FlashUSDT!');
+        }
+      }, 180);
+    } else {
+      alert('Invalid amount or insufficient USDT');
+    }
+  }
+
+  function sendFlash() {
+    let address = document.getElementById('walletAddress').value;
+    let network = document.getElementById('network').value;
+    let amount = parseFloat(document.getElementById('sendAmount').value);
+    if (!address || isNaN(amount) || amount <= 0 || amount > flash) {
+      alert('Invalid inputs');
+      return;
+    }
+    setTimeout(() => {
+      flash -= amount;
+      document.getElementById('flashBalance').innerText = visible ? flash.toFixed(0) : '****';
+      const log = document.createElement('div');
+      log.className = 'tx-log';
+      log.innerText = `${amount} FlashUSDT sent to ${address} via ${network}`;
+      document.getElementById('txHistory').prepend(log);
+      alert(`${amount} FlashUSDT sent via ${network} to ${address}`);
+    }, 5000);
+  }
+</script>
+</body>
+</html>
